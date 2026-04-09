@@ -14,7 +14,7 @@
     "@tauri-apps/plugin-shell": "^2"
   },
   "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^4",
+    "@sveltejs/vite-plugin-svelte": "^5",
     "autoprefixer": "^10",
     "postcss": "^8",
     "svelte": "^5",
