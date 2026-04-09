@@ -9,7 +9,7 @@ pub mod throttle;
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -79,8 +79,10 @@ pub struct DownloadParams {
 pub struct DownloadHandle {
     pub id: Uuid,
     pub params: DownloadParams,
-    pub file_size: u64,
-    pub file_name: String,
+    /// Updated after metadata is fetched — starts at 0 if not provided upfront.
+    pub file_size: Arc<AtomicU64>,
+    /// Updated after metadata is fetched — starts as "unknown".
+    pub file_name: Arc<RwLock<String>>,
     pub progress: Arc<ProgressTracker>,
     state: Arc<RwLock<DownloadState>>,
     cancel: CancellationToken,
@@ -91,6 +93,14 @@ pub struct DownloadHandle {
 impl DownloadHandle {
     pub async fn state(&self) -> DownloadState {
         self.state.read().await.clone()
+    }
+
+    pub fn file_size_now(&self) -> u64 {
+        self.file_size.load(Ordering::Relaxed)
+    }
+
+    pub async fn file_name_now(&self) -> String {
+        self.file_name.read().await.clone()
     }
 
     pub async fn pause(&self) {
@@ -175,11 +185,15 @@ impl DownloadOrchestrator {
         let progress = Arc::new(ProgressTracker::new(0));
         let state = Arc::new(RwLock::new(DownloadState::Provisioning));
         let slots = Arc::new(AtomicU32::new(params.slots));
+        let file_size = Arc::new(AtomicU64::new(params.file_size.unwrap_or(0)));
+        let file_name = Arc::new(RwLock::new(
+            params.file_name.clone().unwrap_or_else(|| "unknown".to_string()),
+        ));
 
         let handle = DownloadHandle {
             id,
-            file_size: params.file_size.unwrap_or(0),
-            file_name: params.file_name.clone().unwrap_or_else(|| "unknown".to_string()),
+            file_size: Arc::clone(&file_size),
+            file_name: Arc::clone(&file_name),
             params: params.clone(),
             progress: progress.clone(),
             state: state.clone(),
@@ -201,6 +215,7 @@ impl DownloadOrchestrator {
             if let Err(e) = run_download(
                 id, params, config, db, proxy_manager, throttler, speed_meter,
                 progress, state.clone(), cancel, pause_notify, slots,
+                file_size, file_name,
             ).await {
                 error!("Download {} failed: {}", id, e);
                 *state.write().await = DownloadState::Failed(e.to_string());
@@ -224,16 +239,18 @@ impl DownloadOrchestrator {
 
     pub async fn get_download_info(&self, id: Uuid) -> Option<DownloadInfo> {
         let handle = self.downloads.read().await.get(&id).cloned()?;
+        let file_size = handle.file_size.load(Ordering::Relaxed);
+        let file_name = handle.file_name.read().await.clone();
         let progress = handle.progress.get();
         let speed = self.speed_meter.get_speed(id).await.unwrap_or(0);
-        let remaining = handle.file_size.saturating_sub(progress);
+        let remaining = file_size.saturating_sub(progress);
         let eta = SpeedMeter::eta_secs(remaining, speed);
         let state = handle.state().await;
 
         Some(DownloadInfo {
             id: id.to_string(),
-            file_name: handle.file_name.clone(),
-            file_size: handle.file_size,
+            file_name,
+            file_size,
             progress,
             speed,
             state: format!("{:?}", state),
@@ -261,29 +278,26 @@ async fn run_download(
     cancel: CancellationToken,
     pause_notify: Arc<Notify>,
     slots: Arc<AtomicU32>,
+    file_size_shared: Arc<AtomicU64>,
+    file_name_shared: Arc<RwLock<String>>,
 ) -> Result<()> {
     info!("Starting download {}: {}", id, params.url);
     *state.write().await = DownloadState::Provisioning;
 
-    // Resolve file metadata if not provided
+    // Fetch file metadata + download URL in one API call
     let api = MegaApiClient::new()?;
-    let file_size = match params.file_size {
-        Some(s) => s,
-        None => {
-            let meta = api.get_file_metadata(&params.file_id, &params.file_key).await
-                .map_err(|e| anyhow!("Failed to get metadata: {}", e))?;
-            meta.size
-        }
-    };
+    let (meta, download_url) = api
+        .get_file_info_and_url(&params.file_id, &params.file_key)
+        .await
+        .map_err(|e| anyhow!("Failed to get file info: {}", e))?;
 
-    let file_name = params.file_name.clone().unwrap_or_else(|| {
-        // Try to get from metadata — placeholder
-        "download".to_string()
-    });
+    let file_size = meta.size;
+    let file_name = params.file_name.clone().unwrap_or(meta.name);
 
-    // Get download URL
-    let download_url = api.get_download_url(&params.file_id).await
-        .map_err(|e| anyhow!("Failed to get download URL: {}", e))?;
+    // Publish real values to the handle so the UI shows them immediately
+    file_size_shared.store(file_size, Ordering::Relaxed);
+    *file_name_shared.write().await = file_name.clone();
+
     let file_url = Arc::new(RwLock::new(download_url));
 
     // Derive AES key and IV from file key

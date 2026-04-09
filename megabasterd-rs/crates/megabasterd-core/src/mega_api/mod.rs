@@ -357,6 +357,37 @@ impl MegaApiClient {
     // File metadata and download URL
     // ---------------------------------------------------------------------------
 
+    /// Get file metadata AND download URL in a single API call (more efficient).
+    /// Uses `{"a":"g","g":1,"p":file_id}` which returns size, attributes, and URL together.
+    pub async fn get_file_info_and_url(
+        &self,
+        file_id: &str,
+        file_key: &str,
+    ) -> Result<(FileMetadata, String), MegaApiError> {
+        let request = json!([{"a": "g", "g": 1, "p": file_id}]).to_string();
+        let url = self.build_api_url(self.session.is_some());
+        let body = self.raw_request(&request, &url).await?;
+        let parsed: Vec<Value> = serde_json::from_str(&body)?;
+        let obj = parsed.first().ok_or(MegaApiError::InvalidResponse("Empty g response".into()))?;
+
+        let size = obj.get("s")
+            .and_then(|v| v.as_u64())
+            .ok_or(MegaApiError::InvalidResponse("Missing size in g response".into()))?;
+
+        let name = if let Some(at) = obj.get("at").and_then(|v| v.as_str()) {
+            decrypt_file_attributes(at, file_key).unwrap_or_else(|_| "unknown".to_string())
+        } else {
+            "unknown".to_string()
+        };
+
+        let download_url = obj.get("g")
+            .and_then(|v| v.as_str())
+            .map(String::from)
+            .ok_or(MegaApiError::InvalidResponse("Missing download URL in g response".into()))?;
+
+        Ok((FileMetadata { name, size, key: file_key.to_string() }, download_url))
+    }
+
     /// Get file metadata (name, size) for a public MEGA link.
     pub async fn get_file_metadata(
         &self,
