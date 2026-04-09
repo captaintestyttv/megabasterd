@@ -21,13 +21,13 @@
     return unlisten;
   });
 
-  $derived const downloads = getDownloadList();
-  $derived const running = downloads.filter(d => d.state === "Running").length;
-  $derived const queued = downloads.filter(d => d.state === "Queued" || d.state === "WaitingToStart").length;
-  $derived const finished = downloads.filter(d => d.state === "Finished").length;
-  $derived const globalSpeed = downloads.reduce((acc, d) => acc + d.speed, 0);
-  $derived const totalProgress = downloads.reduce((acc, d) => acc + d.progress, 0);
-  $derived const totalSize = downloads.reduce((acc, d) => acc + d.file_size, 0);
+  let downloads = $derived(getDownloadList());
+  let running = $derived(downloads.filter(d => d.state === "Running").length);
+  let queued = $derived(downloads.filter(d => d.state === "Queued" || d.state === "WaitingToStart").length);
+  let finished = $derived(downloads.filter(d => d.state === "Finished").length);
+  let globalSpeed = $derived(downloads.reduce((acc, d) => acc + d.speed, 0));
+  let totalProgress = $derived(downloads.reduce((acc, d) => acc + d.progress, 0));
+  let totalSize = $derived(downloads.reduce((acc, d) => acc + d.file_size, 0));
 </script>
 
 <div class="flex flex-col h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans">

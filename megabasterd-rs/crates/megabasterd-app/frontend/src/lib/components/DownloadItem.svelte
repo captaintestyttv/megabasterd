@@ -7,10 +7,10 @@
 
   let { download }: { download: DownloadInfo } = $props();
 
-  $derived const percent = progressPercent(download.progress, download.file_size);
-  $derived const isRunning = download.state === "Running";
-  $derived const isPaused = download.state === "Paused";
-  $derived const isFinished = download.state === "Finished";
+  let percent = $derived(progressPercent(download.progress, download.file_size));
+  let isRunning = $derived(download.state === "Running");
+  let isPaused = $derived(download.state === "Paused");
+  let isFinished = $derived(download.state === "Finished");
 
   async function togglePause() {
     if (isRunning) {
