@@ -1,4 +1,4 @@
-use megabasterd_core::link_parser::{detect_mega_links, LinkInfo, MegaLink};
+use megabasterd_core::link_parser::{detect_mega_links, LinkInfo};
 use megabasterd_core::mega_api::FolderNode;
 use tauri::State;
 

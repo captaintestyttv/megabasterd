@@ -15,3 +15,6 @@ uuid = { workspace = true }
 tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-shell = "2"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }

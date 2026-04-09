@@ -13,14 +13,14 @@ use megabasterd_core::db::Database;
 use megabasterd_core::download::DownloadOrchestrator;
 use megabasterd_core::proxy::{SmartProxyConfig, SmartProxyManager};
 use megabasterd_core::transfer_manager::TransferManager;
-use tauri::{Manager, State};
+use tauri::{Emitter, Manager};
 use tokio::sync::{mpsc, RwLock};
 use tracing::info;
 
 use commands::{
     account_cmds::{add_mega_account, get_mega_accounts, remove_mega_account},
     download_cmds::{
-        add_downloads, cancel_download, cancel_all, close_all_finished, get_downloads,
+        add_downloads, cancel_all, cancel_download, close_all_finished, get_downloads,
         move_download, pause_all, pause_download, resume_all, resume_download, set_download_slots,
     },
     link_cmds::{browse_folder_link, detect_links, enable_clipboard_monitor},
@@ -144,6 +144,7 @@ fn main() {
             get_downloads,
             move_download,
             close_all_finished,
+            cancel_all,
             // Settings
             get_settings,
             save_settings,
@@ -159,11 +160,4 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("Error running Tauri application");
-}
-
-// Stub for cancel_all (not yet in download_cmds)
-#[tauri::command]
-async fn cancel_all(state: State<'_, AppState>) -> Result<(), String> {
-    state.transfer_manager.cancel_all().await;
-    Ok(())
 }

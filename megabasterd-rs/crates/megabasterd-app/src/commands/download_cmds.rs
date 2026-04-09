@@ -1,7 +1,4 @@
-use std::path::PathBuf;
-
 use megabasterd_core::download::{DownloadInfo, DownloadParams};
-use megabasterd_core::transfer_manager::TransferSummary;
 use tauri::State;
 use uuid::Uuid;
 
@@ -105,5 +102,11 @@ pub async fn move_download(
 #[tauri::command]
 pub async fn close_all_finished(state: State<'_, AppState>) -> Result<(), String> {
     state.transfer_manager.close_finished().await;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn cancel_all(state: State<'_, AppState>) -> Result<(), String> {
+    state.transfer_manager.cancel_all().await;
     Ok(())
 }

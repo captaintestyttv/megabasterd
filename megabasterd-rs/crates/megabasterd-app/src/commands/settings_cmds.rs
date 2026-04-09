@@ -23,5 +23,5 @@ pub async fn save_settings(
 pub async fn select_directory(app: tauri::AppHandle) -> Result<Option<String>, String> {
     use tauri_plugin_dialog::DialogExt;
     let path = app.dialog().file().blocking_pick_folder();
-    Ok(path.map(|p| p.to_string_lossy().to_string()))
+    Ok(path.map(|p| p.to_string()))
 }
