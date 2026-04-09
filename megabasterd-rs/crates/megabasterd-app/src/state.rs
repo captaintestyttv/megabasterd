@@ -6,8 +6,7 @@ use megabasterd_core::download::DownloadOrchestrator;
 use megabasterd_core::proxy::SmartProxyManager;
 use megabasterd_core::transfer_manager::TransferManager;
 use megabasterd_core::clipboard::ClipboardMonitor;
-use tokio::sync::{mpsc, RwLock};
-use uuid::Uuid;
+use tokio::sync::RwLock;
 
 pub struct AppState {
     pub db: Arc<Database>,
