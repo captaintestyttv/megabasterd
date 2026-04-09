@@ -1,0 +1,65 @@
+[package]
+name = "megabasterd-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+reqwest = { workspace = true }
+
+# Crypto
+aes = { workspace = true }
+cbc = { workspace = true }
+ecb = { workspace = true }
+ctr = { workspace = true }
+cipher = { workspace = true }
+pbkdf2 = { workspace = true }
+hmac = { workspace = true }
+sha2 = { workspace = true }
+num-bigint = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Database
+rusqlite = { workspace = true }
+
+# Encoding
+base64 = { workspace = true }
+hex = { workspace = true }
+
+# Compression
+flate2 = { workspace = true }
+
+# Regex
+regex = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Utilities
+uuid = { workspace = true }
+once_cell = { workspace = true }
+byteorder = { workspace = true }
+rand = { workspace = true }
+chrono = { workspace = true }
+
+# Clipboard
+arboard = "3"
+
+# HTTP streaming
+futures-util = "0.3"
+
+# URL parsing
+url = "2"
+
+
+[dev-dependencies]
+tokio = { workspace = true }
+wiremock = "0.6"

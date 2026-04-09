@@ -1,0 +1,17 @@
+[package]
+name = "megabasterd-app"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+megabasterd-core = { path = "../megabasterd-core" }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+tauri = { version = "2", features = ["protocol-asset"] }
+tauri-plugin-dialog = "2"
+tauri-plugin-shell = "2"
